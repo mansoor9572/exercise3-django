@@ -39,7 +39,7 @@ python manage.py createsuperuser
 python manage.py runserver
 
 9. Open in browser:
-http://127.0.0.1:8000/admin
+http://127.0.0.1:8080/admin
 
 ---
 
@@ -87,7 +87,7 @@ http://127.0.0.1:8000/admin
 - DELETE /songs/{id}/ → delete
 
 Example:
-http://127.0.0.1:8000/songs/
+http://127.0.0.1:8080/songs/
 
 ![API Output](screenshots/api_songs.png)
 
