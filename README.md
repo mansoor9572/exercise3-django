@@ -43,42 +43,36 @@ http://127.0.0.1:8000/admin
 
 ---
 
-## CRUD Demonstration
+### 👤 User CRUD
 
-### Admin Dashboard
-![Admin Dashboard](music/screenshots/admin_dashboard.png)
+#### Create User
+![Create User](screenshots/create_user.png)
 
----
+#### Read Users
+![Read Users](screenshots/read_users.png)
 
-## User CRUD
+#### Update User
+![Update User](screenshots/update_user.png)
 
-### Create User
-![Create User](music/screenshots/create_user.png)
-
-### Read Users
-![Read Users](music/screenshots/read_users.png)
-
-### Update User
-![Update User](music/screenshots/update_user.png)
-
-### Delete User
-![Delete User](music/screenshots/delete_user.png)
+#### Delete User
+![Delete User](screenshots/delete_user.png)
 
 ---
 
-## Song CRUD
+### 🎵 Song CRUD
 
-### Create Song
-![Create Song](music/screenshots/create_song.png)
+#### Create Song
+![Create Song](screenshots/create_song.png)
 
-### Read Songs
-![Read Songs](music/screenshots/read_songs.png)
+#### Read Songs
+![Read Songs](screenshots/read_songs.png)
 
-### Update Song
-![Update Song](music/screenshots/update_song.png)
+#### Update Song
+![Update Song](screenshots/update_song.png)
 
-### Delete Song
-![Delete Song](music/screenshots/delete_song.png)
+#### Delete Song
+![Delete Song](screenshots/delete_song.png)
+
 
 ---
 
@@ -91,5 +85,5 @@ GET /songs/
 Example:
 http://127.0.0.1:8000/songs/
 
-![API Output](music/screenshots/api_songs.png)
+![API Output](screenshots/api_songs.png)
 
