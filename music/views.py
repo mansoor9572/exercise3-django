@@ -1,9 +1,11 @@
 from django.http import JsonResponse
+from rest_framework import viewsets
 from .models import Song
+from .serializers import SongSerializer
 
-def get_songs(request):
-    songs = list(Song.objects.values())
-    return JsonResponse(songs, safe=False)
+class SongViewSet(viewsets.ModelViewSet):
+    queryset = Song.objects.all()
+    serializer_class = SongSerializer
 
 def home(request):
     return JsonResponse({"message": "API is running"})

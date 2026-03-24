@@ -18,7 +18,7 @@ It demonstrates:
 git clone https://github.com/mansoor9572/exercise3-django.git
 
 2. Navigate to project:
-cd exercise3-django/sithara
+cd exercise3-django
 
 3. Create virtual environment:
 python -m venv venv
@@ -76,11 +76,15 @@ http://127.0.0.1:8000/admin
 
 ---
 
-## API Endpoint
 
-A simple API endpoint is implemented:
 
-GET /songs/
+## API Endpoints (Django REST Framework)
+
+- GET /songs/ → list songs
+- POST /songs/ → create song
+- GET /songs/{id}/ → retrieve
+- PUT /songs/{id}/ → update
+- DELETE /songs/{id}/ → delete
 
 Example:
 http://127.0.0.1:8000/songs/
