@@ -8,7 +8,7 @@ It demonstrates:
 - Domain entities implementation
 - Database persistence using migrations
 - CRUD operations via Django Admin
-- A simple API endpoint
+- A simple API endpointS
 
 ---
 
@@ -39,7 +39,7 @@ python manage.py createsuperuser
 python manage.py runserver
 
 9. Open in browser:
-http://127.0.0.1:8000/admin
+http://127.0.0.1:8080/admin
 
 ---
 
