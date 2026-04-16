@@ -15,7 +15,7 @@ It demonstrates:
 ## Setup Instructions
 
 1. Clone repository:
-git clone 
+git clone https://github.com/mansoor9572/exercise3-django.git
 
 2. Navigate to project:
 cd exercise3-django
