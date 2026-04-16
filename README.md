@@ -91,3 +91,39 @@ http://127.0.0.1:8000/songs/
 
 ![API Output](screenshots/api_songs.png)
 
+---
+
+## Exercise 4 – Strategy Pattern (Song Generation)
+
+### How to Run Mock Mode
+
+```bash
+python exercise_3.py mock
+```
+
+No API key needed. Returns deterministic output instantly.
+
+### How to Run Suno Mode
+
+1. Set your API key as an environment variable (**never commit it**):
+   ```powershell
+   $env:SUNO_API_KEY = "your-api-key-here"
+   ```
+
+2. Run:
+   ```bash
+   python exercise_3.py suno
+   ```
+
+> ⚠️ The `SUNO_API_KEY` must not be committed to the repo. Set it via environment variable or a `.env` file (`.gitignore`d).
+
+---
+
+### Demonstration
+
+#### Mock Strategy Output
+![Mock Generation Output](screenshots/mock_generation_output.png)
+
+#### Suno API Strategy Output
+![Suno Generation Output](screenshots/suno_generation_output.png)
+
