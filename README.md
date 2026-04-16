@@ -8,14 +8,14 @@ It demonstrates:
 - Domain entities implementation
 - Database persistence using migrations
 - CRUD operations via Django Admin
-- A simple API endpoint
+- A simple API endpointS
 
 ---
 
 ## Setup Instructions
 
 1. Clone repository:
-git clone https://github.com/mansoor9572/exercise3-django.git
+git clone 
 
 2. Navigate to project:
 cd exercise3-django
@@ -39,7 +39,7 @@ python manage.py createsuperuser
 python manage.py runserver
 
 9. Open in browser:
-http://127.0.0.1:8000/admin
+http://127.0.0.1:8080/admin
 
 ---
 
@@ -74,57 +74,20 @@ http://127.0.0.1:8000/admin
 ![Delete Song](screenshots/delete_song.png)
 
 
-### Strategy Pattern Implementation (Exercise 4)
+---
 
-This platform implements the Strategy pattern for song generation. Two strategies are available:
-1. `MockSongGeneratorStrategy`: Offline, deterministic generation for testing
-2. `SunoSongGeneratorStrategy`: Live integration with sunoapi.org
 
-#### Selecting the Strategy
-Set the `GENERATOR_STRATEGY` environment variable or add it to `sithara/settings.py`.
-- **Mock Mode (Default):**
-  ```bash
-  export GENERATOR_STRATEGY=mock
-  ```
-- **Suno Mode:**
-  Requires a Suno API Key from `sunoapi.org`. Do **NOT** commit this key to version control.
-  ```bash
-  export GENERATOR_STRATEGY=suno
-  export SUNO_API_KEY=your_actual_api_key_here
-  ```
 
-#### Running the Demonstration Script
-We have provided an `exercise_3.py` script to instantly test both modes and view database states without needing cURL or Postman.
+## API Endpoints (Django REST Framework)
 
-**To run Mock Mode:**
-```powershell
-python exercise_3.py mock
-```
+- GET /songs/ → list songs
+- POST /songs/ → create song
+- GET /songs/{id}/ → retrieve
+- PUT /songs/{id}/ → update
+- DELETE /songs/{id}/ → delete
 
-**To run Suno Mode:**
-Set the API key in your terminal session before executing. Do NOT save the key directly in `exercise_3.py` or `settings.py` to prevent accidental commits.
-```powershell
-$env:SUNO_API_KEY="your_actual_api_key_here"
-python exercise_3.py suno
-```
+Example:
+http://127.0.0.1:8000/songs/
 
-#### cURL API Example Usage
-1. Generate Song:
-   ```bash
-   curl -X POST http://127.0.0.1:8000/songs/generate/ -H "Content-Type: application/json" -d '{"prompt": "A song about coding", "user_id": "<existing-user-uuid>"}'
-   ```
-
-2. Polling for Status:
-   ```bash
-   curl "http://127.0.0.1:8000/songs/check-status/?task_id=<task-uuid>"
-   ```
-
-### Exercise 4 - Generation Evidence
-
-#### 1. Mock Strategy Generation
-![Mock Output](screenshots/mock_generation_output.png)
-
-#### 2. Suno API Strategy Generation
-![Suno Output](screenshots/suno_generation_output.png)
-
+![API Output](screenshots/api_songs.png)
 
