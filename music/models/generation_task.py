@@ -20,6 +20,7 @@ class GenerationTask(models.Model):
     start_time = models.DateTimeField()
     retry_count = models.IntegerField(default=0)
     backgrounded = models.BooleanField(default=False)
+    external_task_id = models.CharField(max_length=255, null=True, blank=True)
 
     song = models.OneToOneField(
         Song,

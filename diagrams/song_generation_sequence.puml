@@ -1,0 +1,95 @@
+@startuml song_generation_sequence
+
+actor Client
+participant "SongViewSet\n(Presentation)" as View
+participant "SongService\n(Application)" as Service
+participant "StrategyFactory" as Factory
+participant "SongGeneratorStrategy\n(Mock/Suno)" as Strategy
+participant "SUNO Web Service\n(External)" as ExternalSuno
+participant "Song/GenerationTask\nAudioFile Models" as DB
+
+Client -> View: POST /songs/generate/ {prompt, user_id}
+activate View
+
+View -> Service: generate_song_from_prompt(user_id, prompt)
+activate Service
+
+Service -> DB: create Song(status="PROCESSING")
+activate DB
+DB --> Service: song_instance
+deactivate DB
+
+Service -> Factory: get_generator_strategy()
+activate Factory
+Factory --> Service: strategy_instance
+deactivate Factory
+
+Service -> Strategy: generate(request)
+activate Strategy
+
+alt if SunoStrategy
+    Strategy -> ExternalSuno: POST /api/v1/generate {prompt}
+    activate ExternalSuno
+    ExternalSuno --> Strategy: HTTP 200 {taskId}
+    deactivate ExternalSuno
+end
+
+Strategy --> Service: GenerationResult(task_id="ext-123", status="PENDING")
+deactivate Strategy
+
+Service -> DB: update GenerationTask(external_task_id)
+activate DB
+DB --> Service: success
+deactivate DB
+
+alt if MockStrategy (instant success)
+    Service -> DB: update Song(lyrics, status="READY")
+    Service -> DB: create AudioFile(...)
+end
+
+Service --> View: song_instance
+deactivate Service
+
+View --> Client: HTTP 200 OK (song data)
+deactivate View
+
+
+== Polling for Status ==
+Client -> View: GET /songs/check-status/?task_id={internal_uuid}
+activate View
+
+View -> Service: check_generation_status(task_id)
+activate Service
+
+Service -> DB: get GenerationTask
+DB --> Service: task (has external_task_id)
+
+Service -> Factory: get_generator_strategy()
+Factory --> Service: strategy_instance
+
+Service -> Strategy: get_status(external_task_id)
+activate Strategy
+
+alt if SunoStrategy
+    Strategy -> ExternalSuno: GET /api/v1/generate/record-info?taskId=ext-123
+    activate ExternalSuno
+    ExternalSuno --> Strategy: HTTP 200 {status="SUCCESS", clips=[...]}
+    deactivate ExternalSuno
+end
+
+Strategy --> Service: GenerationResult(status="SUCCESS", audio_url, lyrics)
+deactivate Strategy
+
+alt if external status == "SUCCESS"
+    Service -> DB: update Task(status="COMPLETED")
+    Service -> DB: update Song(lyrics, status="READY")
+    Service -> DB: create AudioFile(audio_url)
+end
+
+Service --> View: status data (dict)
+deactivate Service
+
+View --> Client: HTTP 200 OK
+deactivate View
+
+@enduml

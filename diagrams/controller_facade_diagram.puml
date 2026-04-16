@@ -1,0 +1,50 @@
+@startuml controller_facade_diagram
+
+skinparam packageStyle rectangle
+
+package "UI Layer" {
+    class DjangoAdmin
+    class RESTAPI
+}
+
+package "Controller Layer" {
+    class ControllerFacade <<Facade>> {
+        + handle_crud()
+        + coordinate()
+    }
+}
+
+package "Domain Layer" {
+    class User {
+        user_id
+        email
+    }
+    
+    class Song {
+        song_id
+        status
+        lyrics
+    }
+    
+    class AudioFile
+    class GenerationTask
+    class ShareLink
+    class SongMetadata
+}
+
+' UI Layer connections to Controller
+DjangoAdmin --> ControllerFacade
+RESTAPI --> ControllerFacade
+
+' Controller connections to Domain
+ControllerFacade --> User
+ControllerFacade --> Song
+ControllerFacade --> AudioFile
+ControllerFacade --> GenerationTask
+ControllerFacade --> ShareLink
+ControllerFacade --> SongMetadata
+
+' Domain model relationships
+Song "*" --> "1" User : Many-to-One
+
+@enduml

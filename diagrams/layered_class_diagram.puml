@@ -1,0 +1,87 @@
+@startuml layered_class_diagram
+
+package "Presentation Layer" {
+    class SongViewSet {
+        + list()
+        + create()
+        + retrieve()
+        + update()
+        + destroy()
+        + generate_song(request)
+        + check_status(request)
+    }
+    class SongSerializer
+}
+
+package "Application Layer" {
+    class SongService {
+        + generate_song_from_prompt(user_id, prompt)
+        + check_generation_status(task_id)
+    }
+}
+
+package "Domain Layer" {
+    class Song {
+        + song_id
+        + status
+        + lyrics
+    }
+    class AudioFile {
+        + file_url
+        + format
+        + size_in_mb
+    }
+    class GenerationTask {
+        + task_id
+        + external_task_id
+        + status
+        + start_time
+    }
+    class User {
+        + user_id
+    }
+}
+
+package "Infrastructure Layer" {
+    interface SongGeneratorStrategy {
+        + generate(request)
+        + get_status(task_id)
+    }
+    
+    class MockSongGeneratorStrategy {
+        + generate(request)
+        + get_status(task_id)
+    }
+    
+    class SunoSongGeneratorStrategy {
+        + generate(request)
+        + get_status(task_id)
+    }
+    
+    class StrategyFactory {
+        + get_generator_strategy()
+    }
+    
+    class SunoAPI {
+        <<external>>
+    }
+}
+
+SongViewSet --> SongSerializer : uses
+SongViewSet --> SongService : calls
+
+SongService --> Song : creates/updates
+SongService --> GenerationTask : creates
+SongService --> AudioFile : creates
+SongService --> StrategyFactory : uses
+StrategyFactory --> SongGeneratorStrategy : creates
+
+SongGeneratorStrategy <|-- MockSongGeneratorStrategy
+SongGeneratorStrategy <|-- SunoSongGeneratorStrategy
+SunoSongGeneratorStrategy --> SunoAPI : calls
+
+Song "*" --> "1" User
+AudioFile "1" --> "1" Song
+GenerationTask "1" --> "1" Song
+
+@enduml

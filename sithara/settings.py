@@ -27,6 +27,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+import os
+GENERATOR_STRATEGY = os.environ.get('GENERATOR_STRATEGY', 'mock')
+SUNO_API_KEY = os.environ.get('SUNO_API_KEY', '')
+
 
 # Application definition
 
