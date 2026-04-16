@@ -1,0 +1,46 @@
+============================================================
+[MUSIC] RUNNING DEMONSTRATION IN 'MOCK' MODE
+============================================================
+
+[1] Initiating Generation Request (prompt: 'A song about getting an A+ in Software Design')...
+ -> Song DB ID: dd63f576-dd2c-4f5c-9673-7d005a333e50
+ -> GenerationTask DB ID: 826d969f-da66-4b90-a13b-880d58451094
+ -> External Task ID: mock-34960b1dd73e
+ -> Current Task Status: COMPLETED
+
+[2] Checking Status via API...
+
+[Status Data Returned]:
+{'status': 'COMPLETED'}
+
+[3] Final DB State:
+ -> GenerationTask Status: COMPLETED
+ -> Song Status: READY
+ -> Lyrics snippet: [Verse 1]
+This is a mock song about: A song about getting an...
+ -> Has Audio File: Yes
+------------------------------------------------------------
+
+
+============================================================
+[MUSIC] RUNNING DEMONSTRATION IN 'SUNO' MODE
+============================================================
+
+[1] Initiating Generation Request (prompt: 'A song about getting an A+ in Software Design')...
+ -> Song DB ID: c08ad549-2e3c-437c-89b7-9e8823eb5e18
+ -> GenerationTask DB ID: f96c6917-5f64-4ad5-ad19-e53064653150
+ -> External Task ID: 6d7ae652c5cbf6519bd56d0811e9e5f9
+ -> Current Task Status: PENDING
+
+[2] Checking Status via API...
+ -> Waiting 5 seconds for Suno API processing...
+
+[Status Data Returned]:
+{'code': 200, 'msg': 'success', 'data': {'taskId': '6d7ae652c5cbf6519bd56d0811e9e5f9', 'parentMusicId': '', 'param': '{"callBackUrl":"https://dummy.com/callback","customMode":false,"instrumental":false,"model":"V4_5ALL","prompt":"A song about getting an A+ in Software Design"}', 'response': None, 'status': 'PENDING', 'type': 'chirp-auk-turbo', 'operationType': 'generate', 'errorCode': None, 'errorMessage': None, 'createTime': 1776352530000}}
+
+[3] Final DB State:
+ -> GenerationTask Status: PENDING
+ -> Song Status: PROCESSING
+ -> Lyrics snippet: None
+ -> Has Audio File: No
+------------------------------------------------------------
