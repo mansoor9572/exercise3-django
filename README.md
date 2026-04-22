@@ -15,31 +15,55 @@ It demonstrates:
 ## Setup Instructions
 
 1. Clone repository:
-git clone https://github.com/mansoor9572/exercise3-django.git
+   ```bash
+   git clone https://github.com/mansoor9572/exercise3-django.git
+   ```
 
 2. Navigate to project:
-cd exercise3-django
+   ```bash
+   cd exercise3-django
+   ```
 
 3. Create virtual environment:
-python -m venv venv
+   ```bash
+   python -m venv venv
+   ```
 
 4. Activate (PowerShell):
-.\venv\Scripts\Activate.ps1
+   ```powershell
+   .\venv\Scripts\Activate.ps1
+   ```
 
-5. Install Django:
-pip install django
+5. Install all dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-6. Run migrations:
-python manage.py migrate
+6. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+   Then edit `.env` with your values (e.g., `GENERATOR_STRATEGY` and `SUNO_API_KEY`).
 
-7. Create admin user:
-python manage.py createsuperuser
+7. Run migrations:
+   ```bash
+   python manage.py migrate
+   ```
 
-8. Run server:
-python manage.py runserver
+8. Create admin user:
+   ```bash
+   python manage.py createsuperuser
+   ```
 
-9. Open in browser:
-http://127.0.0.1:8080/admin
+9. Run server:
+   ```bash
+   python manage.py runserver
+   ```
+
+10. Open in browser:
+    ```
+    http://127.0.0.1:8000/admin
+    ```
 
 ---
 
@@ -85,6 +109,8 @@ http://127.0.0.1:8080/admin
 - GET /songs/{id}/ → retrieve
 - PUT /songs/{id}/ → update
 - DELETE /songs/{id}/ → delete
+- POST /songs/generate/ → generate song using Strategy Pattern
+- GET /songs/check-status/?task_id={id} → check generation status
 
 Example:
 http://127.0.0.1:8000/songs/
@@ -97,17 +123,29 @@ http://127.0.0.1:8000/songs/
 
 ### How to Run Mock Mode
 
-```bash
-python exercise_3.py mock
-```
+> ⚠️ **Prerequisite:** The Django server must be running in a separate terminal:
+> ```bash
+> python manage.py runserver
+> ```
+
+1. Make sure `.env` contains:
+   ```
+   GENERATOR_STRATEGY=mock
+   ```
+
+2. Run:
+   ```bash
+   python exercise_3.py mock
+   ```
 
 No API key needed. Returns deterministic output instantly.
 
 ### How to Run Suno Mode
 
-1. Set your API key as an environment variable (**never commit it**):
-   ```powershell
-   $env:SUNO_API_KEY = "your-api-key-here"
+1. Edit `.env` to set your API key (**never commit it**):
+   ```
+   GENERATOR_STRATEGY=suno
+   SUNO_API_KEY=your-api-key-here
    ```
 
 2. Run:
@@ -115,15 +153,19 @@ No API key needed. Returns deterministic output instantly.
    python exercise_3.py suno
    ```
 
-> ⚠️ The `SUNO_API_KEY` must not be committed to the repo. Set it via environment variable or a `.env` file (`.gitignore`d).
+> ⚠️ The `.env` file is git-ignored and will **never** be committed to the repository.
 
 ---
 
 ### Demonstration
+
+The demonstration script (`exercise_3.py`) calls the **implemented REST API endpoints** via HTTP requests:
+- `POST /songs/generate/` – triggers song generation through the configured strategy
+- `GET /songs/check-status/?task_id=...` – polls the generation task status
+- `GET /songs/` – lists all songs in the database
 
 #### Mock Strategy Output
 ![Mock Generation Output](screenshots/mock_generation_output.png)
 
 #### Suno API Strategy Output
 ![Suno Generation Output](screenshots/suno_generation_output.png)
-

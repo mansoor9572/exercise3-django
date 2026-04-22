@@ -2,7 +2,7 @@ from django.http import JsonResponse
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Song
+from .models import Song, GenerationTask
 from .serializers import SongSerializer
 from .services.song_service import SongService
 
@@ -24,7 +24,11 @@ class SongViewSet(viewsets.ModelViewSet):
         try:
             song = SongService.generate_song_from_prompt(user_id, prompt)
             serializer = self.get_serializer(song)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # Include the task_id so callers can poll status via the API
+            task = GenerationTask.objects.filter(song=song).first()
+            response_data = serializer.data
+            response_data['task_id'] = str(task.task_id) if task else None
+            return Response(response_data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
