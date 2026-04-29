@@ -1,30 +1,6 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Optional
-
-
-@dataclass
-class GenerationRequest:
-    """
-    Data object passed to a SongGeneratorStrategy.
-    Contains all inputs needed to generate a song.
-    """
-    prompt: str
-    title: Optional[str] = None
-    style: Optional[str] = None
-
-
-@dataclass
-class GenerationResult:
-    """
-    Data object returned by a SongGeneratorStrategy.
-    Contains the outcome of a generation call (or task reference).
-    """
-    task_id: str
-    status: str                          # e.g. PENDING, SUCCESS, FAILED
-    audio_url: Optional[str] = None
-    lyrics: Optional[str] = None
-    raw_response: dict = field(default_factory=dict)
+from .generation_request import GenerationRequest
+from .generation_result import GenerationResult
 
 
 class SongGeneratorStrategy(ABC):

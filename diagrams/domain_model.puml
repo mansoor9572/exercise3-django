@@ -1,0 +1,79 @@
+@startuml domain_model
+
+title Sithara – Domain Model
+
+class User {
+  + user_id : UUID <<PK>>
+  + email : String <<unique>>
+}
+
+class Song {
+  + song_id : UUID <<PK>>
+  + status : SongStatus
+  + lyrics : Text
+}
+
+class SongMetadata {
+  + title : String
+  + occasion : String
+  + genre : String
+  + mood : String
+  + voice_type : VoiceType
+  + description : Text
+  + date_created : DateTime
+}
+
+class AudioFile {
+  + file_url : URL
+  + format : String
+  + size_in_mb : Decimal
+}
+
+class GenerationTask {
+  + task_id : UUID <<PK>>
+  + status : GenerationStatus
+  + start_time : DateTime
+  + retry_count : Integer
+  + backgrounded : Boolean
+  + external_task_id : String
+}
+
+class ShareLink {
+  + link_id : UUID <<PK>>
+  + public_url : URL <<unique>>
+  + created_at : DateTime
+}
+
+enum SongStatus {
+  READY
+  PROCESSING
+  FAILED
+}
+
+enum GenerationStatus {
+  PENDING
+  PROCESSING
+  RETRYING
+  COMPLETED
+  FAILED
+  TIMED_OUT
+}
+
+enum VoiceType {
+  MALE
+  FEMALE
+  OTHER
+}
+
+User "1" -- "*" Song : owns >
+User "1" -- "*" GenerationTask : initiates >
+Song "1" -- "0..1" SongMetadata : has >
+Song "1" -- "0..1" AudioFile : has >
+Song "1" -- "0..1" GenerationTask : tracked by >
+Song "1" -- "*" ShareLink : shared via >
+
+Song ..> SongStatus : uses
+GenerationTask ..> GenerationStatus : uses
+SongMetadata ..> VoiceType : uses
+
+@enduml

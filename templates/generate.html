@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% block title %}Create a Song{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header" style="justify-content:center">
+    <h1>✨ Create a Song</h1>
+  </div>
+
+  <div class="create-section">
+    <div class="wizard-card">
+      <!-- Progress Bar -->
+      <div class="wizard-progress">
+        <div class="wizard-progress-segment active" id="seg-1"></div>
+        <div class="wizard-progress-segment" id="seg-2"></div>
+        <div class="wizard-progress-segment" id="seg-3"></div>
+      </div>
+
+      <!-- ═══ Step 1: Title ═══ -->
+      <div class="wizard-step active" id="step-1">
+        <h2 class="wizard-title">What's the title?</h2>
+        <div class="form-group">
+          <input type="text" id="input-title" placeholder="e.g. Midnight Dreams" autocomplete="off" maxlength="100">
+        </div>
+        <button class="wizard-btn wizard-btn-next" id="btn-next-1" onclick="goToStep(2)">Next</button>
+      </div>
+
+      <!-- ═══ Step 2: Vibe (Genre + Mood) ═══ -->
+      <div class="wizard-step" id="step-2">
+        <h2 class="wizard-title">Pick the Vibe</h2>
+        <div class="form-group">
+          <select id="input-genre">
+            <option value="Pop">Pop</option>
+            <option value="Lo-Fi">Lo-Fi</option>
+            <option value="EDM">EDM</option>
+            <option value="Rock">Rock</option>
+            <option value="Hip-Hop">Hip-Hop</option>
+            <option value="R&B">R&B</option>
+            <option value="Jazz">Jazz</option>
+            <option value="Classical">Classical</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <select id="input-mood">
+            <option value="Happy">Happy</option>
+            <option value="Dark">Dark</option>
+            <option value="Energetic">Energetic</option>
+            <option value="Calm">Calm</option>
+            <option value="Romantic">Romantic</option>
+            <option value="Melancholy">Melancholy</option>
+          </select>
+        </div>
+        <div class="wizard-btn-row">
+          <button class="wizard-btn wizard-btn-back" onclick="goToStep(1)">Back</button>
+          <button class="wizard-btn wizard-btn-next" onclick="goToStep(3)">Next</button>
+        </div>
+      </div>
+
+      <!-- ═══ Step 3: Story / Description ═══ -->
+      <div class="wizard-step" id="step-3">
+        <div class="wizard-title-row">
+          <h2 class="wizard-title">The Story</h2>
+          <button class="ai-enhance-btn" id="btn-ai-enhance" onclick="aiEnhance()">
+            <span class="ai-sparkle">✨</span> AI Enhance
+          </button>
+        </div>
+        <div class="form-group">
+          <textarea id="input-description" placeholder="Describe your song idea (e.g. A sunset on a lonely beach)..." rows="6"></textarea>
+        </div>
+        <div class="wizard-btn-row">
+          <button class="wizard-btn wizard-btn-back" onclick="goToStep(2)">Back</button>
+          <button class="wizard-btn wizard-btn-generate" id="btn-generate" onclick="generateSong()">
+            Generate & Save
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Generating Status Panel ═══ -->
+    <div class="generating-panel" id="generating-panel">
+      <div class="generating-animation">
+        <div class="generating-ring">
+          <svg viewBox="0 0 60 60">
+            <circle class="ring-track" cx="30" cy="30" r="26" />
+            <circle class="ring-fill" cx="30" cy="30" r="26" />
+          </svg>
+          <span class="generating-icon">🎵</span>
+        </div>
+      </div>
+      <h3 class="generating-title">Creating your song…</h3>
+      <p class="generating-subtitle" id="generating-status-text">Sending to Suno AI. This can take 1–3 minutes.</p>
+      <div class="generating-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <!-- ═══ Result Panel ═══ -->
+    <div class="result-panel" id="result-panel">
+      <h3>🎉 Song Generated!</h3>
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;flex-wrap:wrap">
+        <span class="badge badge-ready" id="result-status">✓ Ready</span>
+        <span style="color:var(--text-muted);font-size:.8rem" id="result-id"></span>
+      </div>
+      <div class="result-meta-row" id="result-meta-row"></div>
+
+      <!-- Audio Player -->
+      <div class="result-audio-player" id="result-audio-container" style="display:none">
+        <h4 style="margin-bottom:.5rem;font-size:.9rem;color:var(--text-secondary)">🎧 Listen</h4>
+        <audio id="result-audio" controls style="width:100%;border-radius:8px;"></audio>
+      </div>
+
+      <div class="result-lyrics" id="result-lyrics"></div>
+      <div style="margin-top:1rem;display:flex;gap:.75rem;flex-wrap:wrap">
+        <a class="btn btn-primary btn-sm" id="result-view-btn" href="#">View Song →</a>
+        <a class="btn btn-share btn-sm" id="result-download-btn" href="#" download style="display:none">⬇ Download MP3</a>
+        <button class="btn btn-secondary btn-sm" onclick="resetWizard()">New Song</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentStep = 1;
+let pollTimer = null;
+
+function goToStep(step) {
+  // Validation
+  if (step === 2 && !document.getElementById('input-title').value.trim()) {
+    showToast('Please enter a title', 'error');
+    document.getElementById('input-title').focus();
+    return;
+  }
+
+  // Hide all steps
+  document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+  // Show target step
+  document.getElementById('step-' + step).classList.add('active');
+
+  // Update progress bar
+  for (let i = 1; i <= 3; i++) {
+    const seg = document.getElementById('seg-' + i);
+    seg.classList.toggle('active', i <= step);
+  }
+
+  currentStep = step;
+}
+
+function aiEnhance() {
+  const desc = document.getElementById('input-description');
+  const title = document.getElementById('input-title').value.trim();
+  const genre = document.getElementById('input-genre').value;
+  const mood = document.getElementById('input-mood').value;
+  const btn = document.getElementById('btn-ai-enhance');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="ai-sparkle spin">✨</span> Enhancing…';
+
+  setTimeout(() => {
+    const current = desc.value.trim();
+    let enhanced = '';
+    if (current) {
+      enhanced = current + '\n\n' +
+        `Style: ${genre} with a ${mood.toLowerCase()} atmosphere. ` +
+        `The song "${title}" should capture the essence of this feeling ` +
+        `with rich instrumentation and soulful melodies.`;
+    } else {
+      enhanced = `A ${mood.toLowerCase()} ${genre.toLowerCase()} song called "${title}". ` +
+        `The track opens with a dreamy intro and builds into a powerful chorus. ` +
+        `Lyrics explore themes of passion and self-discovery ` +
+        `with vivid imagery and emotional depth.`;
+    }
+    desc.value = enhanced;
+    btn.disabled = false;
+    btn.innerHTML = '<span class="ai-sparkle">✨</span> AI Enhance';
+    showToast('Description enhanced!', 'success');
+  }, 1200);
+}
+
+async function generateSong() {
+  const title = document.getElementById('input-title').value.trim();
+  const genre = document.getElementById('input-genre').value;
+  const mood = document.getElementById('input-mood').value;
+  const description = document.getElementById('input-description').value.trim();
+
+  if (!title) { showToast('Please enter a title', 'error'); goToStep(1); return; }
+
+  const btn = document.getElementById('btn-generate');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Generating…';
+
+  // Hide wizard, show generating panel
+  document.querySelector('.wizard-card').style.display = 'none';
+  document.getElementById('generating-panel').classList.add('visible');
+  document.getElementById('result-panel').classList.remove('visible');
+
+  // Build the prompt from all collected data
+  const prompt = description
+    ? `${title} - ${genre} / ${mood}: ${description}`
+    : `${title} - A ${mood.toLowerCase()} ${genre.toLowerCase()} song`;
+
+  try {
+    const res = await fetch('/api/songs/generate/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: prompt,
+        title: title,
+        genre: genre,
+        mood: mood,
+        description: description
+      })
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      const songId = data.song_id;
+      const taskId = data.task_id;
+      const status = data.status;
+
+      if (status === 'READY') {
+        // Mock strategy returns READY immediately
+        showResult(data, genre, mood, title);
+      } else {
+        // Suno API: start polling for status
+        document.getElementById('generating-status-text').textContent =
+          'Song submitted to Suno AI. Polling for results…';
+        startPolling(songId, taskId, genre, mood, title);
+      }
+    } else {
+      showToast(data.error || 'Generation failed', 'error');
+      showWizardAgain();
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+    showWizardAgain();
+  }
+}
+
+function startPolling(songId, taskId, genre, mood, title) {
+  let attempts = 0;
+  const maxAttempts = 60; // ~3 minutes of polling (every 3s)
+
+  pollTimer = setInterval(async () => {
+    attempts++;
+    document.getElementById('generating-status-text').textContent =
+      `Checking status… (attempt ${attempts}/${maxAttempts})`;
+
+    try {
+      const res = await fetch(`/api/songs/check-status/?task_id=${taskId}`);
+      const statusData = await res.json();
+      const st = (statusData.status || '').toUpperCase();
+
+      if (st === 'COMPLETED' || st === 'SUCCESS') {
+        clearInterval(pollTimer);
+        // Use data from the status response directly
+        const songData = {
+          song_id: statusData.song_id || songId,
+          status: 'READY',
+          lyrics: statusData.lyrics || '',
+          audio_url: statusData.audio_url || null,
+        };
+        showResult(songData, genre, mood, title);
+        return;
+      }
+
+      if (st === 'FAILED') {
+        clearInterval(pollTimer);
+        showToast('Song generation failed. Try again.', 'error');
+        showWizardAgain();
+        return;
+      }
+
+      // Still PENDING — keep polling
+
+    } catch (e) {
+      console.warn('Poll error:', e);
+    }
+
+    if (attempts >= maxAttempts) {
+      clearInterval(pollTimer);
+      showToast('Generation is taking longer than expected. Check your Library.', 'error');
+      showWizardAgain();
+    }
+  }, 3000); // Poll every 3 seconds
+}
+
+function showResult(data, genre, mood, title) {
+  // Hide generating panel
+  document.getElementById('generating-panel').classList.remove('visible');
+
+  const st = data.status || 'READY';
+  document.getElementById('result-status').textContent = (st === 'READY' ? '✓ ' : '⟳ ') + st;
+  document.getElementById('result-status').className = 'badge ' +
+    (st === 'READY' ? 'badge-ready' : st === 'FAILED' ? 'badge-error' : 'badge-generating');
+  document.getElementById('result-id').textContent = 'ID: ' + data.song_id;
+  document.getElementById('result-lyrics').textContent = data.lyrics || 'No lyrics generated.';
+  document.getElementById('result-view-btn').href = '/song/' + data.song_id + '/';
+
+  // Show metadata tags
+  document.getElementById('result-meta-row').innerHTML =
+    `<span class="result-tag">${genre}</span>` +
+    `<span class="result-tag">${mood}</span>` +
+    `<span class="result-tag">${title}</span>`;
+
+  // Audio player
+  const audioContainer = document.getElementById('result-audio-container');
+  const audioEl = document.getElementById('result-audio');
+  const downloadBtn = document.getElementById('result-download-btn');
+
+  if (data.audio_url) {
+    audioEl.src = data.audio_url;
+    audioContainer.style.display = 'block';
+    downloadBtn.href = data.audio_url;
+    downloadBtn.style.display = 'inline-flex';
+    // Also update the sticky player
+    document.getElementById('player-title').textContent = title;
+    document.getElementById('player-genre').textContent = genre + ', ' + mood;
+  } else {
+    audioContainer.style.display = 'none';
+    downloadBtn.style.display = 'none';
+  }
+
+  document.getElementById('result-panel').classList.add('visible');
+  showToast('Song created!', 'success');
+
+  // Reset button
+  const btn = document.getElementById('btn-generate');
+  btn.disabled = false;
+  btn.innerHTML = 'Generate & Save';
+}
+
+function showWizardAgain() {
+  document.getElementById('generating-panel').classList.remove('visible');
+  document.querySelector('.wizard-card').style.display = 'block';
+  const btn = document.getElementById('btn-generate');
+  btn.disabled = false;
+  btn.innerHTML = 'Generate & Save';
+}
+
+function resetWizard() {
+  if (pollTimer) clearInterval(pollTimer);
+  document.getElementById('input-title').value = '';
+  document.getElementById('input-genre').selectedIndex = 0;
+  document.getElementById('input-mood').selectedIndex = 0;
+  document.getElementById('input-description').value = '';
+  document.getElementById('result-panel').classList.remove('visible');
+  document.getElementById('result-audio-container').style.display = 'none';
+  document.getElementById('generating-panel').classList.remove('visible');
+  document.querySelector('.wizard-card').style.display = 'block';
+  goToStep(1);
+}
+</script>
+{% endblock %}

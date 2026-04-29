@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Library{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>My Music Library</h1>
+    <div class="storage-badge">
+      <span class="dot">🎵</span> Storage: {{ songs|length }} / 20 Songs
+    </div>
+  </div>
+
+  <div class="card">
+    {% if songs %}
+    <table class="songs-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="songs-tbody">
+        {% for song in songs %}
+        <tr id="row-{{ song.song_id }}" class="{% if song.status == 'FAILED' %}row-error{% endif %}">
+          <td>
+            <div class="song-info">
+              <div class="song-icon">🎵</div>
+              <div>
+                <div class="song-title">{% if song.metadata %}{{ song.metadata.title }}{% else %}{{ song.song_id|truncatechars:18 }}{% endif %}</div>
+                <div class="song-meta-text">
+                  {% if song.metadata %}{{ song.metadata.genre }} · {{ song.metadata.mood }}{% elif song.lyrics %}{{ song.lyrics|truncatechars:30 }}{% else %}No lyrics{% endif %}
+                </div>
+              </div>
+            </div>
+          </td>
+          <td class="song-date">{{ song.generation_task.start_time|date:"d M Y"|default:"—" }}</td>
+          <td>
+            {% if song.status == 'READY' %}
+              <span class="badge badge-ready">✓ Ready</span>
+            {% elif song.status == 'FAILED' %}
+              <span class="badge badge-error">✕ Error</span>
+            {% else %}
+              <span class="badge badge-generating">⟳ Generating...</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="actions">
+              {% if song.status == 'READY' %}
+                <button class="btn btn-play btn-sm" onclick="playSong('{{ song.song_id }}', '{% if song.metadata %}{{ song.metadata.title|escapejs }}{% else %}{{ song.song_id|truncatechars:12 }}{% endif %}', '{% if song.metadata %}{{ song.metadata.genre|escapejs }}{% endif %}')">▶ Play</button>
+                <a href="{% url 'song_detail' song.song_id %}" class="btn btn-share btn-sm">👁 View</a>
+                <button class="btn btn-secondary btn-sm" onclick="copyShareLink('{{ song.song_id }}')">🔗 Share</button>
+                <button class="btn btn-delete btn-sm" onclick="confirmDelete('{{ song.song_id }}')">🗑 Delete</button>
+              {% elif song.status == 'FAILED' %}
+                <button class="btn btn-retry btn-sm" onclick="retrySong('{{ song.song_id }}')">↻ Retry</button>
+                <button class="btn btn-delete btn-sm" onclick="confirmDelete('{{ song.song_id }}')">🗑 Delete</button>
+              {% else %}
+                <div class="progress-ring">
+                  <svg viewBox="0 0 28 28">
+                    <circle class="track" cx="14" cy="14" r="11" />
+                    <circle class="fill" cx="14" cy="14" r="11"
+                      stroke-dasharray="69.1" stroke-dashoffset="22.8" />
+                  </svg>
+                  67%
+                </div>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="table-footer">
+      <span>Showing {{ songs|length }} of {{ total_count }} songs</span>
+      <button class="pagination-btn">← Previous</button>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="icon">🎶</div>
+      <p>Your library is empty. Start creating!</p>
+      <a href="{% url 'generate' %}" class="btn btn-primary">✨ Create First Song</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal">
+    <h3>🗑 Delete Song?</h3>
+    <p>This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-delete btn-sm" onclick="doDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let deleteId = null;
+let libraryAudio = null;
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+function copyShareLink(songId) {
+  const url = window.location.origin + '/song/' + songId + '/';
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('Share link copied to clipboard!', 'success');
+  }).catch(err => {
+    showToast('Failed to copy link', 'error');
+  });
+}
+
+async function playSong(id, title, genre) {
+  try {
+    const res = await fetch('/api/songs/' + id + '/');
+    const data = await res.json();
+    const audioUrl = data.audio_url || null;
+
+    if (!audioUrl) {
+      window.location.href = '/song/' + id + '/';
+      return;
+    }
+
+    // Hand off to the global player in base.html
+    window.loadAndPlaySong(audioUrl, title, genre);
+    showToast('Now playing: ' + title, 'success');
+  } catch (err) {
+    window.location.href = '/song/' + id + '/';
+  }
+}
+
+function confirmDelete(id) {
+  deleteId = id;
+  document.getElementById('delete-modal').classList.add('visible');
+}
+function closeModal() {
+  document.getElementById('delete-modal').classList.remove('visible');
+  deleteId = null;
+}
+async function doDelete() {
+  if (!deleteId) return;
+  const csrftoken = getCookie('csrftoken');
+  try {
+    const res = await fetch('/api/songs/' + deleteId + '/', { 
+      method: 'DELETE',
+      headers: { 'X-CSRFToken': csrftoken }
+    });
+    if (res.ok || res.status === 204) {
+      const row = document.getElementById('row-' + deleteId);
+      if (row) { row.style.transition = '.3s'; row.style.opacity = '0'; setTimeout(() => row.remove(), 300); }
+      showToast('Song deleted', 'success');
+    } else { 
+      const data = await res.json().catch(()=>({}));
+      showToast(data.error || 'Failed to delete', 'error'); 
+    }
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  closeModal();
+}
+
+async function retrySong(id) {
+  showToast('Retrying generation...', '');
+  try {
+    const res = await fetch('/api/songs/' + id + '/', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'PROCESSING' })
+    });
+    if (res.ok) { showToast('Retry queued — refresh to see update', 'success'); }
+    else { showToast('Retry failed', 'error'); }
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+</script>
+{% endblock %}

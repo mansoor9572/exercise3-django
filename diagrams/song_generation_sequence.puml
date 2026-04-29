@@ -50,7 +50,7 @@ end
 Service --> View: song_instance
 deactivate Service
 
-View --> Client: HTTP 200 OK (song data)
+View --> Client: HTTP 201 Created (song data)
 deactivate View
 
 

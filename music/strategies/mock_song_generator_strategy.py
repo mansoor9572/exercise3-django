@@ -1,8 +1,11 @@
 import uuid
 import logging
-from .base import SongGeneratorStrategy, GenerationRequest, GenerationResult
+from .song_generator_strategy import SongGeneratorStrategy
+from .generation_request import GenerationRequest
+from .generation_result import GenerationResult
 
 logger = logging.getLogger(__name__)
+
 
 class MockSongGeneratorStrategy(SongGeneratorStrategy):
     """

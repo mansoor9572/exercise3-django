@@ -1,87 +1,164 @@
 @startuml layered_class_diagram
 
+skinparam linetype ortho
+
 package "Presentation Layer" {
     class SongViewSet {
-        + list()
-        + create()
-        + retrieve()
-        + update()
-        + destroy()
+        + list(request)
+        + create(request)
+        + retrieve(request, pk)
+        + update(request, pk)
+        + destroy(request, pk)
         + generate_song(request)
         + check_status(request)
     }
-    class SongSerializer
+    class HomeView {
+        + get(request)
+    }
+    class GenerateView {
+        + get(request)
+    }
+    class LibraryView {
+        + get(request)
+    }
+    class SongDetailView {
+        + get(request, song_id)
+    }
+    class SongSerializer {
+        + get_audio_url(obj)
+        + get_title(obj)
+        + get_genre(obj)
+        + get_mood(obj)
+    }
 }
 
 package "Application Layer" {
     class SongService {
-        + generate_song_from_prompt(user_id, prompt)
-        + check_generation_status(task_id)
+        + generate_song_from_prompt(user_id, prompt, **kwargs) : Song
+        + check_generation_status(task_id) : dict
     }
 }
 
 package "Domain Layer" {
+    class User {
+        + user_id : UUID
+        + email : EmailField
+    }
     class Song {
-        + song_id
-        + status
-        + lyrics
+        + song_id : UUID
+        + status : SongStatus
+        + lyrics : TextField
+    }
+    class SongMetadata {
+        + title : CharField
+        + occasion : CharField
+        + genre : CharField
+        + mood : CharField
+        + voice_type : VoiceType
+        + description : TextField
+        + date_created : DateTimeField
     }
     class AudioFile {
-        + file_url
-        + format
-        + size_in_mb
+        + file_url : URLField
+        + format : CharField
+        + size_in_mb : DecimalField
     }
     class GenerationTask {
-        + task_id
-        + external_task_id
-        + status
-        + start_time
+        + task_id : UUID
+        + status : GenerationStatus
+        + start_time : DateTimeField
+        + retry_count : IntegerField
+        + backgrounded : BooleanField
+        + external_task_id : CharField
     }
-    class User {
-        + user_id
+    class ShareLink {
+        + link_id : UUID
+        + public_url : URLField
+        + created_at : DateTimeField
+    }
+    enum SongStatus {
+        READY
+        PROCESSING
+        FAILED
+    }
+    enum GenerationStatus {
+        PENDING
+        PROCESSING
+        RETRYING
+        COMPLETED
+        FAILED
+        TIMED_OUT
+    }
+    enum VoiceType {
+        MALE
+        FEMALE
+        OTHER
     }
 }
 
 package "Infrastructure Layer" {
-    interface SongGeneratorStrategy {
-        + generate(request)
-        + get_status(task_id)
+    abstract class SongGeneratorStrategy <<interface>> {
+        + {abstract} generate(request) : GenerationResult
+        + {abstract} get_status(task_id) : GenerationResult
     }
-    
     class MockSongGeneratorStrategy {
-        + generate(request)
-        + get_status(task_id)
+        + generate(request) : GenerationResult
+        + get_status(task_id) : GenerationResult
     }
-    
     class SunoSongGeneratorStrategy {
-        + generate(request)
-        + get_status(task_id)
+        - _get_headers() : dict
+        + generate(request) : GenerationResult
+        + get_status(task_id) : GenerationResult
     }
-    
     class StrategyFactory {
-        + get_generator_strategy()
+        + {static} get_generator_strategy() : SongGeneratorStrategy
     }
-    
-    class SunoAPI {
-        <<external>>
+    class GenerationRequest <<dataclass>> {
+        + prompt : str
+        + title : Optional[str]
+        + style : Optional[str]
+    }
+    class GenerationResult <<dataclass>> {
+        + task_id : str
+        + status : str
+        + audio_url : Optional[str]
+        + lyrics : Optional[str]
+        + raw_response : dict
+    }
+    class SunoAPI <<external>> {
     }
 }
 
-SongViewSet --> SongSerializer : uses
+' ─── Presentation → Application ───
 SongViewSet --> SongService : calls
+SongViewSet --> SongSerializer : uses
 
+' ─── Application → Domain ───
 SongService --> Song : creates/updates
 SongService --> GenerationTask : creates
 SongService --> AudioFile : creates
-SongService --> StrategyFactory : uses
-StrategyFactory --> SongGeneratorStrategy : creates
+SongService --> SongMetadata : creates
+SongService --> User : queries
 
+' ─── Application → Infrastructure ───
+SongService --> StrategyFactory : uses
+
+' ─── Infrastructure relationships ───
+StrategyFactory --> SongGeneratorStrategy : creates
 SongGeneratorStrategy <|-- MockSongGeneratorStrategy
 SongGeneratorStrategy <|-- SunoSongGeneratorStrategy
 SunoSongGeneratorStrategy --> SunoAPI : calls
+SongGeneratorStrategy ..> GenerationRequest : receives
+SongGeneratorStrategy ..> GenerationResult : returns
 
+' ─── Domain relationships ───
 Song "*" --> "1" User
-AudioFile "1" --> "1" Song
-GenerationTask "1" --> "1" Song
+SongMetadata "0..1" --> "1" Song
+AudioFile "0..1" --> "1" Song
+GenerationTask "0..1" --> "1" Song
+ShareLink "*" --> "1" Song
+Song ..> SongStatus
+GenerationTask ..> GenerationStatus
+SongMetadata ..> VoiceType
 
 @enduml

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}{% if metadata %}{{ metadata.title }}{% else %}{{ song.song_id|truncatechars:12 }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <a href="{% url 'library' %}" class="detail-back">← Back to Library</a>
+
+  <div class="card detail-content">
+    <div class="detail-header">
+      <h2>🎵 {% if metadata %}{{ metadata.title }}{% else %}Song Details{% endif %}</h2>
+      {% if song.status == 'READY' %}<span class="badge badge-ready">✓ Ready</span>
+      {% elif song.status == 'FAILED' %}<span class="badge badge-error">✕ Error</span>
+      {% else %}<span class="badge badge-generating">⟳ Generating</span>{% endif %}
+    </div>
+
+    <div class="detail-meta-grid">
+      <div class="meta-item">
+        <div class="label">Song ID</div>
+        <div class="value" style="font-size:.75rem">{{ song.song_id }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Status</div>
+        <div class="value">{{ song.status }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">User</div>
+        <div class="value">{{ song.user }}</div>
+      </div>
+      {% if metadata %}
+      <div class="meta-item">
+        <div class="label">Genre</div>
+        <div class="value">{{ metadata.genre }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Mood</div>
+        <div class="value">{{ metadata.mood }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Voice</div>
+        <div class="value">{{ metadata.voice_type }}</div>
+      </div>
+      {% endif %}
+      {% if audio %}
+      <div class="meta-item">
+        <div class="label">Format</div>
+        <div class="value">{{ audio.format }} · {{ audio.size_in_mb }} MB</div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if audio and audio.file_url %}
+    <div class="detail-audio-section">
+      <h3>🎧 Listen to Your Song</h3>
+      <audio id="detail-audio-player" controls preload="auto" src="{{ audio.file_url }}" style="width:100%; max-width:600px;">
+        Your browser does not support the audio element.
+      </audio>
+      <div style="margin-top:.75rem;display:flex;gap:.5rem;flex-wrap:wrap">
+        <a href="{{ audio.file_url }}" target="_blank" class="btn btn-primary btn-sm" download>⬇ Download MP3</a>
+        <button class="btn btn-secondary btn-sm" onclick="playInStickyPlayer()">🔊 Play in Player</button>
+        <button class="btn btn-secondary btn-sm" onclick="copyShareLink('{{ song.song_id }}')">🔗 Share Link</button>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if metadata and metadata.description %}
+    <h3 style="margin-bottom:.5rem">📖 Story</h3>
+    <div class="detail-lyrics" style="margin-bottom:1.5rem">{{ metadata.description }}</div>
+    {% endif %}
+
+    <h3 style="margin-bottom:.5rem">📝 Lyrics</h3>
+    {% if song.lyrics %}
+    <div class="detail-lyrics">{{ song.lyrics }}</div>
+    {% else %}
+    <div class="detail-lyrics" style="color:var(--text-muted);font-style:italic">No lyrics available.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyShareLink(songId) {
+  const url = window.location.origin + '/song/' + songId + '/';
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('Share link copied to clipboard!', 'success');
+  }).catch(err => {
+    showToast('Failed to copy link', 'error');
+  });
+}
+
+function playInStickyPlayer() {
+  const title = '{{ metadata.title|default:"Unknown"|escapejs }}';
+  const genre = '{{ metadata.genre|default:""|escapejs }}';
+  const mood = '{{ metadata.mood|default:""|escapejs }}';
+  const audioUrl = '{{ audio.file_url|escapejs }}';
+  
+  if (audioUrl) {
+    const fullGenre = genre + (mood ? ', ' + mood : '');
+    window.loadAndPlaySong(audioUrl, title, fullGenre);
+    showToast('Now playing: ' + title, 'success');
+  } else {
+    showToast('No audio available to play', 'error');
+  }
+}
+</script>
+{% endblock %}

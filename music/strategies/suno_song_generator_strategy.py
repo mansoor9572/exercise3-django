@@ -1,9 +1,12 @@
 import requests
 import logging
 from django.conf import settings
-from .base import SongGeneratorStrategy, GenerationRequest, GenerationResult
+from .song_generator_strategy import SongGeneratorStrategy
+from .generation_request import GenerationRequest
+from .generation_result import GenerationResult
 
 logger = logging.getLogger(__name__)
+
 
 class SunoSongGeneratorStrategy(SongGeneratorStrategy):
     """
@@ -22,7 +25,13 @@ class SunoSongGeneratorStrategy(SongGeneratorStrategy):
         }
 
     def generate(self, request: GenerationRequest) -> GenerationResult:
-        payload = {"prompt": request.prompt, "callBackUrl": "https://dummy.com/callback", "model": "V4_5ALL", "customMode": False, "instrumental": False}
+        payload = {
+            "prompt": request.prompt,
+            "callBackUrl": "https://dummy.com/callback",
+            "model": "V4_5ALL",
+            "customMode": False,
+            "instrumental": False,
+        }
         logger.info(f"[SunoStrategy] Sending generate request for prompt='{request.prompt}'")
 
         try:
@@ -34,17 +43,17 @@ class SunoSongGeneratorStrategy(SongGeneratorStrategy):
             )
             response.raise_for_status()
             data = response.json()
-            
+
             # Suno API often returns HTTP 200 even for errors, returning code=401 in body
             if data.get("code") and data.get("code") != 200:
                 logger.error(f"[SunoStrategy] API Error Data: {data}")
                 return GenerationResult(task_id="", status="FAILED", raw_response=data)
-                
+
             task_id = data.get("data", {}).get("taskId", "")
             if not task_id:
                 logger.error(f"[SunoStrategy] No taskId returned: {data}")
                 return GenerationResult(task_id="", status="FAILED", raw_response=data)
-                
+
             return GenerationResult(
                 task_id=task_id,
                 status="PENDING",
@@ -66,22 +75,47 @@ class SunoSongGeneratorStrategy(SongGeneratorStrategy):
             response.raise_for_status()
             data = response.json()
             inner = data.get("data", {})
-            status = inner.get("status", "PENDING")
-            
-            clips = inner.get("clips") or []
+
+            # ── Extract clips from the actual Suno API response structure ──
+            suno_response = inner.get("response") or {}
+            suno_data = suno_response.get("sunoData") or []
+
             audio_url = None
             lyrics = None
-            if clips:
-                first_clip = clips[0] if isinstance(clips, list) else next(iter(clips.values()), {})
-                audio_url = first_clip.get("audio_url")
-                meta = first_clip.get("metadata") or {}
-                lyrics = meta.get("prompt") or first_clip.get("lyric")
+            resolved_status = "PENDING"
+
+            if suno_data and isinstance(suno_data, list) and len(suno_data) > 0:
+                first_clip = suno_data[0]
+
+                audio_url = first_clip.get("audioUrl") or ""
+                if not audio_url:
+                    audio_url = first_clip.get("streamAudioUrl") or ""
+
+                lyrics = first_clip.get("prompt") or ""
+
+                if audio_url:
+                    resolved_status = "SUCCESS"
+                    logger.info(f"[SunoStrategy] Song ready! audio_url={audio_url[:80]}...")
+                else:
+                    resolved_status = "PENDING"
+            else:
+                # Also try legacy format: data.clips
+                clips = inner.get("clips") or []
+                if clips:
+                    first_clip = clips[0] if isinstance(clips, list) else next(iter(clips.values()), {})
+                    audio_url = first_clip.get("audio_url") or first_clip.get("streamAudioUrl") or ""
+                    meta = first_clip.get("metadata") or {}
+                    lyrics = meta.get("prompt") or first_clip.get("lyric") or ""
+                    if audio_url:
+                        resolved_status = "SUCCESS"
+
+            logger.info(f"[SunoStrategy] Poll result: status={resolved_status}, has_audio={'yes' if audio_url else 'no'}")
 
             return GenerationResult(
                 task_id=task_id,
-                status=status,
-                audio_url=audio_url,
-                lyrics=lyrics,
+                status=resolved_status,
+                audio_url=audio_url if audio_url else None,
+                lyrics=lyrics if lyrics else None,
                 raw_response=data,
             )
         except requests.exceptions.RequestException as e:

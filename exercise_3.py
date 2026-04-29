@@ -58,11 +58,11 @@ def run_demo(mode: str):
 
     # ─── Step 1: Generate a song via the REST API ───────────────
     prompt = "A song about getting an A+ in Software Design"
-    print(f"\n[1] POST {BASE_URL}/songs/generate/")
+    print(f"\n[1] POST {BASE_URL}/api/songs/generate/")
     print(f"    Payload: prompt='{prompt}', user_id='{user_id}'")
 
     response = requests.post(
-        f"{BASE_URL}/songs/generate/",
+        f"{BASE_URL}/api/songs/generate/",
         json={"prompt": prompt, "user_id": user_id},
     )
     print(f"    HTTP {response.status_code}")
@@ -77,13 +77,13 @@ def run_demo(mode: str):
     task_id = data.get("task_id")   # returned by the generate endpoint
 
     # ─── Step 2: Check generation status via the REST API ───────
-    print(f"\n[2] GET {BASE_URL}/songs/check-status/?task_id={task_id}")
+    print(f"\n[2] GET {BASE_URL}/api/songs/check-status/?task_id={task_id}")
     if mode == "suno":
         print("    Waiting 5 seconds for Suno API processing...")
         time.sleep(5)
 
     status_response = requests.get(
-        f"{BASE_URL}/songs/check-status/",
+        f"{BASE_URL}/api/songs/check-status/",
         params={"task_id": task_id},
     )
     print(f"    HTTP {status_response.status_code}")
@@ -91,8 +91,8 @@ def run_demo(mode: str):
     print(f"    Response: {status_data}")
 
     # ─── Step 3: List all songs via the REST API ────────────────
-    print(f"\n[3] GET {BASE_URL}/songs/")
-    list_response = requests.get(f"{BASE_URL}/songs/")
+    print(f"\n[3] GET {BASE_URL}/api/songs/")
+    list_response = requests.get(f"{BASE_URL}/api/songs/")
     print(f"    HTTP {list_response.status_code}")
     songs = list_response.json()
     print(f"    Total songs in DB: {len(songs)}")

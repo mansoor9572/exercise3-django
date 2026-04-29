@@ -1,18 +1,24 @@
 import uuid
 from django.utils import timezone
 from decimal import Decimal
-from ..models import Song, AudioFile, GenerationTask, User
+from ..models import Song, AudioFile, GenerationTask, SongMetadata, User
 from ..models.song_status import SongStatus
 from ..models.generation_status import GenerationStatus
-from ..strategies import get_generator_strategy, GenerationRequest
+from ..strategies import StrategyFactory, GenerationRequest
 
 class SongService:
     @classmethod
-    def generate_song_from_prompt(cls, user_id: str, prompt: str) -> Song:
+    def generate_song_from_prompt(cls, user_id: str, prompt: str, **kwargs) -> Song:
         """
         Use Case: Generate Song
         Implements the layer coordination between Domain and Infrastructure.
+        Accepts optional title, genre, mood, description for metadata.
         """
+        title = kwargs.get('title', '')
+        genre = kwargs.get('genre', '')
+        mood = kwargs.get('mood', '')
+        description = kwargs.get('description', '')
+
         try:
             user = User.objects.get(user_id=user_id)
         except User.DoesNotExist:
@@ -28,6 +34,20 @@ class SongService:
             status=SongStatus.PROCESSING,
             lyrics=""
         )
+
+        # 1b. Create SongMetadata if any metadata fields were provided
+        if title or genre or mood or description:
+            from ..models.voice_type import VoiceType
+            SongMetadata.objects.create(
+                song=song,
+                title=title or str(song.song_id)[:8],
+                occasion='',
+                genre=genre or 'Pop',
+                mood=mood or 'Happy',
+                voice_type=VoiceType.OTHER,
+                description=description,
+                date_created=timezone.now()
+            )
         
         # 2. Create GenerationTask (tracking)
         task = GenerationTask.objects.create(
@@ -39,7 +59,7 @@ class SongService:
         )
         
         # 3. Call Web Service API via Strategy
-        strategy = get_generator_strategy()
+        strategy = StrategyFactory.get_generator_strategy()
         request = GenerationRequest(prompt=prompt)
         result = strategy.generate(request)
         
@@ -79,9 +99,17 @@ class SongService:
         task = GenerationTask.objects.get(task_id=task_id)
         
         if task.status in [GenerationStatus.COMPLETED, GenerationStatus.FAILED]:
-            return {"status": task.status}
+            # Already resolved — return song data
+            song = task.song
+            audio = AudioFile.objects.filter(song=song).first()
+            return {
+                "status": task.status,
+                "song_id": str(song.song_id),
+                "lyrics": song.lyrics or "",
+                "audio_url": audio.file_url if audio else None,
+            }
             
-        strategy = get_generator_strategy()
+        strategy = StrategyFactory.get_generator_strategy()
         result = strategy.get_status(task.external_task_id or "")
         
         # Update our DB models based on external status
@@ -105,10 +133,20 @@ class SongService:
                         "size_in_mb": Decimal("5.00")
                     }
                 )
+
+            return {
+                "status": "COMPLETED",
+                "song_id": str(song.song_id),
+                "lyrics": song.lyrics,
+                "audio_url": result.audio_url,
+            }
         elif external_status == "FAILED":
             task.status = GenerationStatus.FAILED
             task.save()
             task.song.status = SongStatus.FAILED
             task.song.save()
+            return {"status": "FAILED", "song_id": str(task.song.song_id)}
             
-        return result.raw_response
+        # Still pending
+        return {"status": "PENDING", "song_id": str(task.song.song_id)}
+

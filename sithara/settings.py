@@ -31,6 +31,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# Strategy pattern: read from .env (defaults to 'mock' for safe offline use)
 GENERATOR_STRATEGY = os.environ.get('GENERATOR_STRATEGY', 'mock')
 SUNO_API_KEY = os.environ.get('SUNO_API_KEY', '')
 
@@ -64,7 +65,7 @@ ROOT_URLCONF = 'sithara.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -125,3 +126,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
